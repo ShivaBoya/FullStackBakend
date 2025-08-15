@@ -1,57 +1,3 @@
-// const express = require("express");
-// const ResumeModel = require("../models/ResumeModel");
-// const authMiddleware = require("../middlewares/authmiddleware");
-
-// const ResumeRouter = express.Router();
-
-// ResumeRouter.post("/create", authMiddleware(["user"]), async (req, res) => {
-//   try {
-//      const resumeData = req.body;
-
-//     // Attach userId from decoded token
-//     resumeData.userId = req.userId;
-//     const resume = new ResumeModel(resumeData)
-//     await resume.save();
-//     res.status(201).json({ message: "Resume created Succesfully", resume });
-//   } catch (err) {
-//     res
-//       .status(500)
-//       .json({ message: "Somthing went Wrong", error: err.message });
-//   }
-// });
-
-// ResumeRouter.get("/getresume", authMiddleware(), async(req,res) =>{
-//     try {
-//         const userId = req.userId
-
-//         const resume = await ResumeModel.findOne({userId})
-
-//         if(!resume){
-//             return res.status(404).json({message: "No resume found for this user"})
-//         }
-
-//         res.status(200).json({resume})
-//     } catch (err) {
-//         res.json(500).json({message: "Somthing went wrong ", error:err.message})
-//     }
-// })
-
-// ResumeRouter.get("/allresumes", authMiddleware(), async(req,res)=>{
-//     try{
-
-//         const userId = req.userId
-
-//         const resumes = await ResumeModel.find({userId})
-
-//         if(resumes.length === 0){
-//             return res.status(404).json({message:"No resumes found this user"})
-//         }
-
-//         res.status(200).json({resumes})
-//     }catch(err){
-//        res.status(500).json({message: "Somthing went wrong ", error: err.message})
-//     }
-// })
 
 const express = require("express");
 const ResumeModel = require("../models/ResumeModel");
@@ -61,7 +7,6 @@ const fs = require("fs");
 const nodemailer = require("nodemailer");
 const cron = require("node-cron");
 const path = require("path");
-///const fs = require("fs");
 
 const ResumeRouter = express.Router();
 ResumeRouter.post("/create", authMiddleware(["user"]), async (req, res) => {
