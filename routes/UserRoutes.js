@@ -60,7 +60,7 @@ UserRouter.post("/login", async (req, res) => {
     const accessToken = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET_KEY,
-      { expiresIn: "30s" }
+      { expiresIn: "1d" }
     );
     const refreshToken = jwt.sign(
       { userId: user._id, role: user.role },
@@ -213,28 +213,41 @@ UserRouter.post("/reset-password", async (req, res) => {
   }
   //res.json({message:"Password reset succesful"})
 });
-
-
-
-
-UserRouter.put("/update", authMiddleware(), async (req, res) => {
-  const { name, email, location, profession, password } = req.body;
-
+UserRouter.get("/profile", authMiddleware(), async (req, res) => {
   try {
-    const updates = { name, email, location, profession };
+    // ✅ authMiddleware sets req.userId
+    const user = await UserModel.findById(req.userId).select("-password");
 
-    if (password) {
-      const hashedPassword = await bcrypt.hash(password, saltRounds);
-      updates.password = hashedPassword;
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    await UserModel.findByIdAndUpdate(req.user.userId, updates);
-    res.status(200).json({ message: "User updated successfully" });
+    res.status(200).json(user);
   } catch (err) {
-    console.error("Update failed:", err);
-    res.status(500).json({ message: "Failed to update user" });
+    console.error("Profile fetch failed:", err);
+    res.status(500).json({ message: "Failed to fetch profile" });
   }
 });
+
+// UserRouter.put("/update", authMiddleware(), async (req, res) => {
+//   const { name, email, location, profession, password } = req.body;
+
+//   try {
+//     const updates = { name, email, location, profession };
+
+//     if (password) {
+//       const hashedPassword = await bcrypt.hash(password, saltRounds);
+//       updates.password = hashedPassword;
+//     }
+
+//     // ✅ Use req.userId from middleware
+//     await UserModel.findByIdAndUpdate(req.userId, updates);
+//     res.status(200).json({ message: "User updated successfully" });
+//   } catch (err) {
+//     console.error("Update failed:", err);
+//     res.status(500).json({ message: "Failed to update user" });
+//   }
+// });
 
 
 module.exports = UserRouter;

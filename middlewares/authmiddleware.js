@@ -38,19 +38,20 @@
 
 // module.exports = authMiddleware;
 
-
+// authMiddleware.js
 const jwt = require("jsonwebtoken");
 
 const authMiddleware = (allowedRoles = []) => {
   return (req, res, next) => {
+    // Extract access token from Authorization header
     const token = req.headers.authorization?.split(" ")[1]; // Bearer <access_token>
 
     try {
-      
       if (!token) {
         return res.status(401).json({ message: "No access token provided" });
       }
 
+      // Verify access token
       const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
       // Role check
@@ -58,12 +59,13 @@ const authMiddleware = (allowedRoles = []) => {
         return res.status(403).json({ message: "Unauthorized: Insufficient permissions" });
       }
 
+      // Attach user info to request
       req.userId = decoded.userId;
       req.userRole = decoded.role;
       next();
     } catch (err) {
       if (err.message === "jwt expired") {
-        // Try verifying the refresh token
+        // Access token expired, try verifying refresh token
         const refreshToken = req.headers.refreshtoken?.split(" ")[1]; // Refresh <token>
         if (!refreshToken) {
           return res.status(403).json({ message: "Access token expired. Refresh token missing." });
@@ -83,7 +85,7 @@ const authMiddleware = (allowedRoles = []) => {
           req.userId = refreshDecoded.userId;
           req.userRole = refreshDecoded.role;
 
-          // Also send new token in header for client to update
+          // Send new access token in response header
           res.setHeader("new-access-token", newAccessToken);
 
           next();
@@ -91,6 +93,7 @@ const authMiddleware = (allowedRoles = []) => {
           return res.status(403).json({ message: "Refresh token expired or invalid" });
         }
       } else {
+        // Invalid token
         return res.status(401).json({ message: "Invalid token", error: err.message });
       }
     }

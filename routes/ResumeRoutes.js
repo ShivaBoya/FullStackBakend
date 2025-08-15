@@ -64,28 +64,21 @@ const path = require("path");
 ///const fs = require("fs");
 
 const ResumeRouter = express.Router();
-
 ResumeRouter.post("/create", authMiddleware(["user"]), async (req, res) => {
-  try {
-    const resumeData = req.body;
-    resumeData.userId = req.userId;
+  const resumeData = req.body;
+  resumeData.userId = req.userId;
 
-    const existing = await ResumeModel.findOne({ userId: req.userId });
-    if (existing) {
-      return res
-        .status(400)
-        .json({ message: "Resume already exists. Use update instead." });
-    }
-
-    const resume = new ResumeModel(resumeData);
-    await resume.save();
-
-    res.status(201).json({ message: "Resume created successfully", resume });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Something went wrong", error: err.message });
+  const existing = await ResumeModel.findOne({ userId: req.userId });
+  if (existing) {
+    return res
+      .status(400)
+      .json({ message: "Resume already exists. Use update instead." });
   }
+
+  const resume = new ResumeModel(resumeData);
+  await resume.save();
+
+  res.status(201).json({ message: "Resume created successfully", resume });
 });
 
 ResumeRouter.get("/getresume", authMiddleware(["user"]), async (req, res) => {

@@ -4,6 +4,8 @@ const express = require("express");
 const connectToDB = require("./config/Database");
 const UserRouter = require("./routes/UserRoutes");
 const ResumeRouter = require("./routes/ResumeRoutes");
+const profileRouter = require("./routes/profile");
+const paymentRouter = require("./routes/payment");
 require("dotenv").config();
 const PORT = process.env.PORT || 3000;
 const app = express();
@@ -18,9 +20,10 @@ app.get("/test", (req, res) => {
     res.status(500).json({ message: "Somthing went wrong" });
   }
 });
-
+app.use("/", profileRouter)
 app.use("/users", UserRouter);
 app.use("/Resume", ResumeRouter);
+app.use("/", paymentRouter)
 
 app.use((req, res) => {
   try {

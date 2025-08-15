@@ -11,50 +11,51 @@ const resumeSchema = new mongoose.Schema({
     github: String,
   },
 
-  workExperience: [
-    {
-      company: String,
-      position: String,
-      startDate: String,
-      endDate: String,
-      description: String,
-    },
-  ],
+  workExperience: { type: [Object], default: [] },
 
-  education: [
-    {
-      instition: String,
-      degree: String,
-      startDate: String,
-      endDate: String,
-      grade: String,
-    },
-  ],
+  education: {
+    type: [
+      {
+        institution: String,
+        degree: String,
+        startDate: String,
+        endDate: String,
+        grade: String,
+      },
+    ],
+    default: [],
+  },
 
-  skills: [String],
+  skills: { type: [String], default: [] },
 
-  certifications: [
-    {
-      nmae: String,
-      issuer: String,
-      year: String,
-    },
-  ],
+  certifications: {
+    type: [
+      {
+        name: String,
+        issuer: String,
+        year: String,
+      },
+    ],
+    default: [],
+  },
 
-  projects: [
-    {
-      title: String,
-      description: String,
-      techStack: [String],
-      githublink: String,
-      collaborators: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-        },
-      ],
-    },
-  ],
+  projects: {
+    type: [
+      {
+        title: String,
+        description: String,
+        techStack: [String],
+        githubLink: String,
+        collaborators: [
+          {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+          },
+        ],
+      },
+    ],
+    default: [],
+  },
 
   coverLetter: {
     title: String,
@@ -67,16 +68,24 @@ const resumeSchema = new mongoose.Schema({
     layout: String,
   },
 
-  versions: [
-    {
-      versionName: String,
-      date: Object,
-      createdAt: { type: Date, default: Date.now },
-    },
-  ],
+  versions: {
+    type: [
+      {
+        versionName: String,
+        date: Date,
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    default: [],
+  },
 
   createdAt: { type: Date, default: Date.now },
   updatedAt: Date,
+});
+
+resumeSchema.pre("save", function (next) {
+  this.updatedAt = new Date();
+  next();
 });
 
 module.exports = mongoose.model("Resume", resumeSchema);
