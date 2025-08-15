@@ -1,36 +1,34 @@
+// server.js
+require("dotenv").config(); // ✅ load env vars first
 
-const cors = require("cors")
+const cors = require("cors");
 const express = require("express");
 const connectToDB = require("./config/Database");
+
+// Now safely import routes
 const UserRouter = require("./routes/UserRoutes");
 const ResumeRouter = require("./routes/ResumeRoutes");
 const profileRouter = require("./routes/profile");
 const paymentRouter = require("./routes/payment");
-require("dotenv").config();
+
 const PORT = process.env.PORT || 3000;
 const app = express();
-app.use(cors())
+
+app.use(cors());
 connectToDB();
 app.use(express.json());
 
 app.get("/test", (req, res) => {
-  try {
-    res.status(201).json({ message: "This is test route" });
-  } catch (err) {
-    res.status(500).json({ message: "Somthing went wrong" });
-  }
+  res.status(201).json({ message: "This is test route" });
 });
-app.use("/", profileRouter)
+
+app.use("/", profileRouter);
 app.use("/users", UserRouter);
 app.use("/Resume", ResumeRouter);
-app.use("/", paymentRouter)
+app.use("/", paymentRouter);
 
 app.use((req, res) => {
-  try {
-    res.status(200).json({ message: "This request is undefind" });
-  } catch (err) {
-    res.status(500).json({ messgae: "Somthing went wrong " });
-  }
+  res.status(200).json({ message: "This request is undefined" });
 });
 
 app.get("/login", (req, res) => {
@@ -38,5 +36,5 @@ app.get("/login", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server started ${PORT}`);
+  console.log(`Server started on port ${PORT}`);
 });
