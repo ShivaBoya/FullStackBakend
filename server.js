@@ -1,9 +1,9 @@
 // server.js
-require("dotenv").config(); // ✅ load env vars first
+require("dotenv").config();
 
 const cors = require("cors");
 const express = require("express");
-const mongoose = require("./config/Database"); // ⬅️ import mongoose (already connected)
+const mongoose = require("./config/Database"); // ⬅️ already connects
 
 const UserRouter = require("./routes/UserRoutes");
 const ResumeRouter = require("./routes/ResumeRoutes");
@@ -33,6 +33,14 @@ app.get("/login", (req, res) => {
   res.send("Please Login again.....");
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server started on port ${PORT}`);
+// ✅ Wait for MongoDB before starting server
+mongoose.connection.once("open", () => {
+  console.log("✅ MongoDB connection ready");
+  app.listen(PORT, () => {
+    console.log(`🚀 Server started on port ${PORT}`);
+  });
+});
+
+mongoose.connection.on("error", (err) => {
+  console.error("❌ MongoDB connection error:", err);
 });
