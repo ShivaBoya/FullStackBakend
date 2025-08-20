@@ -3,9 +3,8 @@ require("dotenv").config(); // ✅ load env vars first
 
 const cors = require("cors");
 const express = require("express");
-const connectToDB = require("./config/Database");
+const mongoose = require("./config/Database"); // ⬅️ import mongoose (already connected)
 
-// Now safely import routes
 const UserRouter = require("./routes/UserRoutes");
 const ResumeRouter = require("./routes/ResumeRoutes");
 const profileRouter = require("./routes/profile");
@@ -15,7 +14,6 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 
 app.use(cors());
-connectToDB();
 app.use(express.json());
 
 app.get("/test", (req, res) => {
@@ -36,5 +34,5 @@ app.get("/login", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
+  console.log(`🚀 Server started on port ${PORT}`);
 });
