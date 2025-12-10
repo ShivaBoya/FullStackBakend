@@ -8,7 +8,7 @@ require("dotenv").config();
 
 const paymentRouter = express.Router();
 
-// Route: POST /paymentcreate
+
 paymentRouter.post("/paymentcreate", authMiddleware(["user"]), async (req, res) => {
   try {
     const { membershipType } = req.body;
