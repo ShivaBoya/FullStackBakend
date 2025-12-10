@@ -60,8 +60,18 @@ UserRouter.post("/signup", async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Signup Error:", err.message);
-    res.status(500).json({ message: "Something went wrong" });
+    console.error("Signup Error:", err);
+
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors).map(val => val.message);
+      return res.status(400).json({ message: messages.join(', ') });
+    }
+
+    if (err.code === 11000) {
+      return res.status(409).json({ message: "Duplicate field value entered" });
+    }
+
+    res.status(500).json({ message: "Server Error: " + err.message });
   }
 });
 
