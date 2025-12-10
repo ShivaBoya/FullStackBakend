@@ -1,91 +1,47 @@
 const mongoose = require("mongoose");
 
-const resumeSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  personalInfo: {
-    name: String,
-    email: String,
-    phone: String,
-    address: String,
-    linkedin: String,
-    github: String,
+const resumeSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    // Metadata
+    meta: {
+      title: { type: String, default: "Untitled Resume" },
+      isPublic: { type: Boolean, default: false },
+      lastActiveStep: { type: String, default: "personal" }, // For UI restoration
+    },
+
+    // Layout & Style Configuration
+    templateId: { type: String, default: "modern" },
+    themeId: { type: String, default: "blue" },
+
+    // CORE DATA: Order of sections
+    // e.g. ["personal", "summary", "experience", "projects", "education"]
+    sectionsOrder: {
+      type: [String],
+      default: ["personal", "summary", "experience", "projects", "education", "skills"]
+    },
+
+    // CORE DATA: Content of sections
+    // This is flexible to accommodate different field types defined in SectionRegistry
+    sectionsData: {
+      type: Map,
+      of: mongoose.Schema.Types.Mixed,
+      default: {
+        personal: {}, // { name: "", email: "" ... }
+        summary: {},  // { content: "" }
+        experience: [], // Array of objects
+        education: [],
+        skills: [],
+        projects: [],
+      }
+    }
   },
-
-  workExperience: { type: [Object], default: [] },
-
-  education: {
-    type: [
-      {
-        institution: String,
-        degree: String,
-        startDate: String,
-        endDate: String,
-        grade: String,
-      },
-    ],
-    default: [],
-  },
-
-  skills: { type: [String], default: [] },
-
-  certifications: {
-    type: [
-      {
-        name: String,
-        issuer: String,
-        year: String,
-      },
-    ],
-    default: [],
-  },
-
-  projects: {
-    type: [
-      {
-        title: String,
-        description: String,
-        techStack: [String],
-        githubLink: String,
-        collaborators: [
-          {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-          },
-        ],
-      },
-    ],
-    default: [],
-  },
-
-  coverLetter: {
-    title: String,
-    content: String,
-  },
-
-  theme: {
-    font: String,
-    color: String,
-    layout: String,
-  },
-
-  versions: {
-    type: [
-      {
-        versionName: String,
-        date: Date,
-        createdAt: { type: Date, default: Date.now },
-      },
-    ],
-    default: [],
-  },
-
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: Date,
-});
-
-resumeSchema.pre("save", function (next) {
-  this.updatedAt = new Date();
-  next();
-});
+  { timestamps: true }
+);
 
 module.exports = mongoose.model("Resume", resumeSchema);

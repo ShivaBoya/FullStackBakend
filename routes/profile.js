@@ -33,7 +33,7 @@ profileRouter.get("/profileview", authMiddleware(), async (req, res) => {
 
 profileRouter.patch("/profileedit", authMiddleware(), async (req, res) => {
   try {
-    const allowedUpdates = ["username", "email", "role"]; // add any fields you allow editing
+    const allowedUpdates = ["username","profileUrl","name"]; 
     const updates = {};
 
     Object.keys(req.body).forEach((key) => {

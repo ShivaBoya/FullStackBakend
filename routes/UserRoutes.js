@@ -9,20 +9,25 @@ const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const blackListTokenModel = require("../models/blackListTokenModel");
 const authMiddleware = require("../middlewares/authmiddleware");
+const SectionRegistry = require("../config/SectionRegistry");
+const TemplateRegistry = require("../config/TemplateRegistry");
+const ThemeRegistry = require("../config/ThemeRegistry");
+
+
 
 const UserRouter = express.Router();
-
-// ========== SIGNUP ==========
 UserRouter.post("/signup", async (req, res) => {
   try {
-    const { username, email, password, role } = req.body;
+    const { name, username, email, password, phone, role } = req.body;
 
-    if (!email || !password || !username) {
-      return res
-        .status(400)
-        .json({ message: "Email, Username, and Password are required" });
+    // ✅ Validation
+    if (!name || !username || !email || !password) {
+      return res.status(400).json({
+        message: "Name, Username, Email, and Password are required",
+      });
     }
 
+    // Check if user already exists
     const existingUser = await UserModel.findOne({ email });
     if (existingUser) {
       return res
@@ -30,18 +35,36 @@ UserRouter.post("/signup", async (req, res) => {
         .json({ message: "User already exists with this email" });
     }
 
-    bcrypt.hash(password, saltRounds, async function (err, hash) {
-      if (err) {
-        return res.status(500).json({ message: "Error hashing password" });
-      }
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-      await UserModel.create({ username, email, password: hash, role });
-      res.status(201).json({ message: "Signup Success" });
+    // Create user
+    const newUser = await UserModel.create({
+      name,
+      username,
+      email,
+      password: hashedPassword,
+      phone,
+      role,
+    });
+
+    res.status(201).json({
+      message: "Signup Success",
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        username: newUser.username,
+        email: newUser.email,
+        phone: newUser.phone,
+        role: newUser.role,
+      },
     });
   } catch (err) {
+    console.error("Signup Error:", err.message);
     res.status(500).json({ message: "Something went wrong" });
   }
 });
+
 
 UserRouter.post("/login", async (req, res) => {
   try {
@@ -151,67 +174,106 @@ UserRouter.post("/forget-password", async (req, res) => {
     const { email } = req.body;
     let user = await UserModel.findOne({ email });
     if (!user) {
-      res.status(404).json({ message: "User not found" });
-    } else {
-      const resetToken = jwt.sign(
-        { userId: user._id, role: user.role || "user" },
-        process.env.JWT_SECRET_KEY,
-        { expiresIn: "1d" }
-      );
-      let resetPasswordlink = `http://localhost:3000/users/reset-password?token=${resetToken}`;
-      // const info = await transporter.sendMail({
-      //   from: '"Shiva Siddu" <shivasiddu80@gmail.com>',
-      //   to: user.email,
-      //   subject: "password reset link",
-      //   html: `<p>Dear ${user.username} , here is the password resect link, please finish the process within 20minutes</p>
-      //   <h4>${resetPasswordlink}</h4> `,
-      // });
-
-      res.json({
-        message: "Password Rest link To sent  Registerd Email",
-        resetPasswordlink,
-      });
+      return res.status(404).json({ message: "User not found" });
     }
+
+    // Generate 6 digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Set expiry (10 minutes)
+    user.resetOtp = otp;
+    user.resetOtpExpires = new Date(Date.now() + 10 * 60 * 1000); // Verify casting
+
+    console.log("Saving user with OTP:", otp);
+    await user.save({ validateBeforeSave: false });
+    console.log("User saved successfully");
+
+    // In production, send via email. Here we send in response for testing.
+    // const info = await transporter.sendMail(...)
+
+    console.log(`[MOCK EMAIL] OTP for ${email}: ${otp}`);
+
+    res.json({
+      message: "OTP sent to your email",
+      mockOtp: otp // Remove this in production!
+    });
+
   } catch (err) {
-    res.status(500).json({ message: "Somthing went , please try again later" });
+    console.error("FORGOT PASSWORD ERROR:", err); // Explicit log prefix
+    res.status(500).json({ message: "Something went wrong, please try again later" });
+  }
+});
+
+UserRouter.post("/verify-otp", async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const user = await UserModel.findOne({
+      email,
+      resetOtp: otp,
+      resetOtpExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    // Generate a temporary reset token that is valid for password reset
+    const resetToken = jwt.sign(
+      { userId: user._id, type: "password_reset" },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: "15m" }
+    );
+
+    // Clear OTP so it can't be reused immediately (optional, or clear on password reset)
+    user.resetOtp = undefined;
+    user.resetOtpExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    res.json({
+      message: "OTP verified successfully",
+      resetToken
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Verification failed" });
   }
 });
 
 UserRouter.post("/reset-password", async (req, res) => {
-  const { token } = req.query;
-  const { newPassword } = req.body;
+  // Now expects a token (from verify-otp) and newPassword
+  const { token, newPassword } = req.body;
+
   try {
-    let decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-    if (decoded) {
-      console.log(decoded);
-      let user = await UserModel.findById(decoded.userId);
-      // user.password = newPassword;
-      // await user.save();
-      bcrypt.hash(newPassword, saltRounds, async function (err, hash) {
-        if (err) {
-          return res.status(500).json({ message: "Error hashing password" });
-        } else {
-          user.password = hash;
-          await user.save();
-          await blackListTokenModel.create({ token });
-          res.json({ message: "password reset succesful" });
-        }
-      });
-      //  console.log(user)
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: "Token and new password are required" });
     }
+
+    let decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+
+    if (decoded.type !== "password_reset") {
+      return res.status(400).json({ message: "Invalid token type" });
+    }
+
+    let user = await UserModel.findById(decoded.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+    user.password = hashedPassword;
+    await user.save();
+
+    res.json({ message: "Password reset successful" });
+
   } catch (err) {
-    if (err.message == "jwt expired") {
-      res.status(403).json({
-        message:
-          "Password reset link, expired please click forget password again",
-      });
+    console.error(err);
+    if (err.name === "TokenExpiredError") {
+      res.status(403).json({ message: "Reset session expired, please try again" });
     } else {
-      res
-        .status(500)
-        .json({ message: " Somthing went wrong , please try again later" });
+      res.status(500).json({ message: "Something went wrong" });
     }
   }
-  //res.json({message:"Password reset succesful"})
 });
 UserRouter.get("/profile", authMiddleware(), async (req, res) => {
   try {
@@ -229,25 +291,14 @@ UserRouter.get("/profile", authMiddleware(), async (req, res) => {
   }
 });
 
-// UserRouter.put("/update", authMiddleware(), async (req, res) => {
-//   const { name, email, location, profession, password } = req.body;
+// --- METADATA ROUTES ---
+UserRouter.get("/config/sections", (req, res) => res.json(SectionRegistry));
+UserRouter.get("/config/templates", (req, res) => res.json(TemplateRegistry));
+UserRouter.get("/config/themes", (req, res) => res.json(ThemeRegistry));
 
-//   try {
-//     const updates = { name, email, location, profession };
-
-//     if (password) {
-//       const hashedPassword = await bcrypt.hash(password, saltRounds);
-//       updates.password = hashedPassword;
-//     }
-
-//     // ✅ Use req.userId from middleware
-//     await UserModel.findByIdAndUpdate(req.userId, updates);
-//     res.status(200).json({ message: "User updated successfully" });
-//   } catch (err) {
-//     console.error("Update failed:", err);
-//     res.status(500).json({ message: "Failed to update user" });
-//   }
-// });
-
+// --- METADATA ROUTES ---
+UserRouter.get("/config/sections", (req, res) => res.json(SectionRegistry));
+UserRouter.get("/config/templates", (req, res) => res.json(TemplateRegistry));
+UserRouter.get("/config/themes", (req, res) => res.json(ThemeRegistry));
 
 module.exports = UserRouter;
