@@ -1,6 +1,7 @@
 const membershipAmount = {
-  silver: 300,
-  gold: 700,
+  silver: 1,
+  gold: 2,
+  diamond: 3,
 };
 
 module.exports = { membershipAmount };
