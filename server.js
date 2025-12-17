@@ -9,6 +9,7 @@ const UserRouter = require("./routes/UserRoutes");
 const ResumeRouter = require("./routes/ResumeRoutes");
 const profileRouter = require("./routes/profile");
 const paymentRouter = require("./routes/payment");
+const aiRouter = require("./routes/aiRoutes");
 
 const PORT = process.env.PORT || 3000;
 const app = express();
@@ -24,6 +25,7 @@ app.use("/", profileRouter);
 app.use("/users", UserRouter);
 app.use("/Resume", ResumeRouter);
 app.use("/", paymentRouter);
+app.use("/ai", aiRouter);
 
 app.use((req, res) => {
   res.status(200).json({ message: "This request is undefined" });
