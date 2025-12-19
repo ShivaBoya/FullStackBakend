@@ -16,7 +16,7 @@ router.post("/chat", async (req, res) => {
         }
 
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
         // Add a system prompt context by prepending it to the message or using system instruction if supported.
         // simpler to just prepend context for a stateless chat
