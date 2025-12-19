@@ -7,7 +7,7 @@ require("dotenv").config();
 const profileRouter = express.Router();
 
 /**
- * @route   GET /profileview
+ * @route   
  * @desc    View logged-in user's profile
  * @access  Private
  */
