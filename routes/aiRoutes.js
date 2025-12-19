@@ -1,42 +1,34 @@
 const express = require("express");
-const OpenAI = require("openai");
-const authMiddleware = require("../middlewares/authmiddleware");
-require("dotenv").config();
-
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const router = express.Router();
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+router.post("/chat", async (req, res) => {
+    const { message } = req.body;
 
-router.post("/chat", authMiddleware(["user"]), async (req, res) => {
     try {
-        const { message } = req.body;
-
         if (!message) {
             return res.status(400).json({ error: "Message is required" });
         }
 
-        if (!process.env.OPENAI_API_KEY) {
-            console.error("OpenAI Error: Missing API Key");
-            return res.status(500).json({ error: "Server Configuration Error: OPENAI_API_KEY is missing." });
+        if (!process.env.GEMINI_API_KEY) {
+            console.error("Gemini Error: Missing API Key");
+            return res.status(500).json({ error: "Server Configuration Error: GEMINI_API_KEY is missing." });
         }
 
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-                {
-                    role: "system",
-                    content:
-                        "You are an expert AI Career Coach and Resume Builder Assistant. Your goal is to help users improve their resumes, suggest skills, prepare for interviews, and provide career advice. Be professional, encouraging, and concise.",
-                },
-                { role: "user", content: message },
-            ],
-        });
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        res.json({ response: completion.choices[0].message.content });
+        // Add a system prompt context by prepending it to the message or using system instruction if supported.
+        // simpler to just prepend context for a stateless chat
+        const context = "You are an expert AI Career Coach and Resume Builder Assistant. Your goal is to help users improve their resumes, suggest skills, prepare for interviews, and provide career advice. Be professional, encouraging, and concise.\n\nUser Query: ";
+
+        const result = await model.generateContent(context + message);
+        const response = await result.response;
+        const text = response.text();
+
+        res.json({ response: text });
     } catch (error) {
-        console.error("OpenAI Error:", error);
+        console.error("Gemini Error:", error);
         res.status(500).json({
             error: "AI Request Failed",
             details: error.message || "Unknown error"
